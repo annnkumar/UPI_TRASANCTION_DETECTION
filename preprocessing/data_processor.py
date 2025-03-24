@@ -131,19 +131,28 @@ def engineer_features(df):
     
     # Process IP Address if available
     if 'IPAddress' in df_engineered.columns:
-        # Extract first octet of IP
-        df_engineered['IP_FirstOctet'] = df_engineered['IPAddress'].astype(str).str.split('.').str[0].astype(int)
-        
-        # Create High-Risk IP Flag (simplified approach)
-        high_risk_ranges = [(0, 10), (172, 172), (192, 192), (198, 198)]
-        df_engineered['HighRiskIP'] = df_engineered['IP_FirstOctet'].apply(
-            lambda x: 1 if any(lower <= x <= upper for lower, upper in high_risk_ranges) else 0
-        )
+        try:
+            # Extract first octet of IP
+            df_engineered['IP_FirstOctet'] = df_engineered['IPAddress'].astype(str).str.split('.').str[0].astype(int)
+            
+            # Create High-Risk IP Flag (simplified approach)
+            high_risk_ranges = [(0, 10), (172, 172), (192, 192), (198, 198)]
+            df_engineered['HighRiskIP'] = df_engineered['IP_FirstOctet'].apply(
+                lambda x: 1 if any(lower <= x <= upper for lower, upper in high_risk_ranges) else 0
+            )
+        except:
+            # If IP address format is unexpected
+            df_engineered['IP_FirstOctet'] = 0
+            df_engineered['HighRiskIP'] = 0
     
     # Convert boolean columns to integers
     bool_cols = ['UnusualLocation', 'UnusualAmount', 'NewDevice']
     for col in bool_cols:
         if col in df_engineered.columns:
-            df_engineered[col] = df_engineered[col].astype(int)
+            if df_engineered[col].dtype == bool:
+                df_engineered[col] = df_engineered[col].astype(int)
+            elif df_engineered[col].dtype == object:
+                # Convert string 'True'/'False' to integer if needed
+                df_engineered[col] = df_engineered[col].map({'True': 1, 'False': 0, True: 1, False: 0}).fillna(0).astype(int)
     
     return df_engineered
