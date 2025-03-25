@@ -8,37 +8,45 @@ import os
 from preprocessing.data_processor import preprocess_data, engineer_features
 from models.model_utils import load_model, make_prediction, get_feature_importance
 
-# ✅ Get the absolute path of the current directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ✅ Load Model & Preprocessing Objects
+# Get the correct file paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, "models", "best_model.pkl")
 preprocess_path = os.path.join(BASE_DIR, "models", "preprocessing_objects.pkl")
 
-# ✅ Load model and preprocessing objects
-with open(model_path, "rb") as model_file:
-    model = pickle.load(model_file)
+# Ensure model files exist before loading
+if not os.path.exists(model_path):
+    st.error("⚠️ Model file not found: best_model.pkl")
+if not os.path.exists(preprocess_path):
+    st.error("⚠️ Preprocessing file not found: preprocessing_objects.pkl")
 
-with open(preprocess_path, "rb") as preprocess_file:
-    preprocess_objects = pickle.load(preprocess_file)
+# Load model and preprocessing objects if available
+if os.path.exists(model_path) and os.path.exists(preprocess_path):
+    with open(model_path, "rb") as model_file:
+        model = pickle.load(model_file)
+    with open(preprocess_path, "rb") as preprocess_file:
+        preprocess_objects = pickle.load(preprocess_file)
+else:
+    st.error("❌ Could not load model files. Please check your GitHub repo.")
 
-# ✅ Streamlit UI
+# Streamlit UI
 st.title("UPI Fraud Detection System")
 st.write("Enter transaction details to check for fraud risk.")
 
-# Add user input form (example)
 amount = st.number_input("Transaction Amount", min_value=0.0)
-user_input = {"amount": amount}  # You may need more features
+user_input = {"amount": amount}
 
-# Predict on user input
 if st.button("Predict Fraud"):
-    processed_input = preprocess_data(user_input, preprocess_objects)
-    prediction = model.predict([processed_input])
-    
-    if prediction[0] == 1:
-        st.error("⚠️ Fraudulent Transaction Detected!")
+    if "model" in locals() and "preprocess_objects" in locals():
+        processed_input = preprocess_objects.transform([user_input])  # Use correct preprocessing function
+        prediction = model.predict(processed_input)
+
+        if prediction[0] == 1:
+            st.error("⚠️ Fraudulent Transaction Detected!")
+        else:
+            st.success("✅ Transaction is Safe.")
     else:
-        st.success("✅ Transaction is Safe.")
+        st.error("❌ Model is not loaded. Check your files.")
 
 # Page configuration
 st.set_page_config(
