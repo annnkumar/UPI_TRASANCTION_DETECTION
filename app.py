@@ -8,6 +8,38 @@ import os
 from preprocessing.data_processor import preprocess_data, engineer_features
 from models.model_utils import load_model, make_prediction, get_feature_importance
 
+# ✅ Get the absolute path of the current directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ✅ Load Model & Preprocessing Objects
+model_path = os.path.join(BASE_DIR, "models", "best_model.pkl")
+preprocess_path = os.path.join(BASE_DIR, "models", "preprocessing_objects.pkl")
+
+# ✅ Load model and preprocessing objects
+with open(model_path, "rb") as model_file:
+    model = pickle.load(model_file)
+
+with open(preprocess_path, "rb") as preprocess_file:
+    preprocess_objects = pickle.load(preprocess_file)
+
+# ✅ Streamlit UI
+st.title("UPI Fraud Detection System")
+st.write("Enter transaction details to check for fraud risk.")
+
+# Add user input form (example)
+amount = st.number_input("Transaction Amount", min_value=0.0)
+user_input = {"amount": amount}  # You may need more features
+
+# Predict on user input
+if st.button("Predict Fraud"):
+    processed_input = preprocess_data(user_input, preprocess_objects)
+    prediction = model.predict([processed_input])
+    
+    if prediction[0] == 1:
+        st.error("⚠️ Fraudulent Transaction Detected!")
+    else:
+        st.success("✅ Transaction is Safe.")
+
 # Page configuration
 st.set_page_config(
     page_title="UPI Fraud Detection",
